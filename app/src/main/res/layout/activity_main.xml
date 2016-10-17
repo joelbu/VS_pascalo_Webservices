@@ -10,8 +10,27 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices.MainActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <Button
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:text="@string/button_text_rest_client"
+        android:id="@+id/button_rest_client" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/button_text_soap_client"
+        android:id="@+id/button_soap_client"
+        android:layout_below="@id/button_rest_client"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/button_text_rest_server"
+        android:id="@+id/button_rest_server"
+        android:layout_below="@id/button_soap_client"
+        android:layout_alignParentStart="true" />
 </RelativeLayout>

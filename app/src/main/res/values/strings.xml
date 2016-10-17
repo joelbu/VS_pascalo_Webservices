@@ -1,3 +1,9 @@
 <resources>
-    <string name="app_name">Webservices</string>
+    <string name="app_name">VS Webservices</string>
+    <string name="button_text_rest_client">REST client</string>
+    <string name="button_text_soap_client">SOAP client</string>
+    <string name="button_text_rest_server">REST server</string>
+    <string name="activity_label_rest_client">REST client</string>
+    <string name="activity_label_soap_client">SOAP client</string>
+    <string name="activity_label_rest_server">REST server</string>
 </resources>
