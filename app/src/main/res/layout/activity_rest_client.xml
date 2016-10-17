@@ -10,4 +10,20 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices.REST_client">
 
+    <Button
+        android:text="@string/again"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:id="@+id/rest_client_again_button"
+        android:layout_alignParentEnd="true" />
+
+    <TextView
+        android:text="@string/no_data_to_display"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/rest_client_text_view"
+        android:layout_below="@+id/rest_client_again_button"
+        android:layout_alignParentStart="true" />
 </RelativeLayout>

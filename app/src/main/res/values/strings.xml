@@ -6,4 +6,8 @@
     <string name="activity_label_rest_client">REST client</string>
     <string name="activity_label_soap_client">SOAP client</string>
     <string name="activity_label_rest_server">REST server</string>
+    <string name="no_data_to_display">No Data to display</string>
+    <string name="temperature_is">Temperature is:</string>
+    <string name="degree_symbol">°C</string>
+    <string name="again">Again</string>
 </resources>
