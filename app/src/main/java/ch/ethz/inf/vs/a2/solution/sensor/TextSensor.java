@@ -28,7 +28,7 @@ public class TextSensor extends AbstractSensor {
 
         // This is the most efficient way to get a String from the stream apparently
         ByteArrayOutputStream result = new ByteArrayOutputStream();
-        byte[] buffer = new byte[512];
+        byte[] buffer = new byte[32];
         int length;
         while ((length = inputStream.read(buffer)) != -1) {
             result.write(buffer, 0, length);
