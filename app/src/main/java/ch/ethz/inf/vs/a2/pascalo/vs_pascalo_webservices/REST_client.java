@@ -9,13 +9,16 @@ import android.widget.TextView;
 
 import ch.ethz.inf.vs.a2.sensor.SensorListener;
 import ch.ethz.inf.vs.a2.solution.sensor.RawHttpSensor;
+import ch.ethz.inf.vs.a2.solution.sensor.TextSensor;
 
 public class REST_client extends AppCompatActivity implements SensorListener, View.OnClickListener  {
 
     private final String TAG = "RestClient";
 
     private RawHttpSensor mRawHttpSensor;
+    private TextSensor mTextSensor;
     private TextView mTextView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +29,11 @@ public class REST_client extends AppCompatActivity implements SensorListener, Vi
         mRawHttpSensor = new RawHttpSensor();
         mRawHttpSensor.registerListener(this);
 
+        // Create TextSensor and make our activity a listener of it, so we can display the result
+        mTextSensor = new TextSensor();
+        mTextSensor.registerListener(this);
+
+        // Find the TextView for displaying results
         mTextView = (TextView) findViewById(R.id.rest_client_text_view);
         findViewById(R.id.rest_client_again_button).setOnClickListener(this);
     }
@@ -33,31 +41,9 @@ public class REST_client extends AppCompatActivity implements SensorListener, Vi
     @Override
     protected void onStart() {
         super.onStart();
-        makeRawHttpSensorRequest();
-    }
 
-    private void makeRawHttpSensorRequest() {
-
+        // MAke the first request with the RawHttpSensor
         mRawHttpSensor.getTemperature();
-
-        /* Shit all of this is already in the abstract class
-
-        // Network activity needs to be done on another thread
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... params) {
-                String response = "";
-                try {
-                    response = mRawHttpSensor.executeRequest();
-                } catch (Exception e) {
-                    Log.e(TAG, "Caught exception from mRawHttpSensor " + e.toString());
-                }
-                double temperature = mRawHttpSensor.parseResponse(response);
-                return null;
-            }
-        }.execute();
-
-        */
     }
 
     @Override
@@ -81,9 +67,10 @@ public class REST_client extends AppCompatActivity implements SensorListener, Vi
 
     @Override
     public void onClick(View v) {
+        // Register the Again Button to the TextSensor
         switch (v.getId()) {
             case R.id.rest_client_again_button:
-                makeRawHttpSensorRequest();
+                mTextSensor.getTemperature();
                 break;
         }
     }
