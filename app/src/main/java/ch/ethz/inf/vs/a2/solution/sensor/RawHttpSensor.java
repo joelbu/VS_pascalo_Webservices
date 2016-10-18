@@ -69,7 +69,6 @@ public class RawHttpSensor extends AbstractSensor {
         // This is confusing to me, the assignment tells us to register our activity as a listener,
         // so I publish the value here, right before returning it and do not use the return value
         // in the activity but instead the value we get in the listener
-        this.sendValue(temperature);
         return temperature;
     }
 }

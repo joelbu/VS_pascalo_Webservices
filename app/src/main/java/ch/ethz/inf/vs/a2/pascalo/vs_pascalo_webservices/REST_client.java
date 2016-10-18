@@ -37,6 +37,11 @@ public class REST_client extends AppCompatActivity implements SensorListener, Vi
     }
 
     private void makeRawHttpSensorRequest() {
+
+        mRawHttpSensor.getTemperature();
+
+        /* Shit all of this is already in the abstract class
+
         // Network activity needs to be done on another thread
         new AsyncTask<Void, Void, Void>() {
             @Override
@@ -51,6 +56,8 @@ public class REST_client extends AppCompatActivity implements SensorListener, Vi
                 return null;
             }
         }.execute();
+
+        */
     }
 
     @Override

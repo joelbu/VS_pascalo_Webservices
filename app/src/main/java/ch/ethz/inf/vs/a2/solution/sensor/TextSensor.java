@@ -1,5 +1,7 @@
 package ch.ethz.inf.vs.a2.solution.sensor;
 
+import java.net.URL;
+
 import ch.ethz.inf.vs.a2.sensor.AbstractSensor;
 
 /**
@@ -9,6 +11,9 @@ import ch.ethz.inf.vs.a2.sensor.AbstractSensor;
 public class TextSensor extends AbstractSensor {
     @Override
     public String executeRequest() throws Exception {
+
+        //URL url = new URL("http", )
+
         return null;
     }
 
