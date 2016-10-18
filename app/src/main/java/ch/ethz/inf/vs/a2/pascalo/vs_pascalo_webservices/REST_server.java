@@ -1,11 +1,13 @@
 package ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 
@@ -17,6 +19,7 @@ public class REST_server extends AppCompatActivity implements View.OnClickListen
 
     private static String TAG = "RESTServer";
     private NetworkInterface mWlanInterface;
+    private InetAddress mInetAddress;
     private TextView mTextViewServiceStatus;
 
     @Override
@@ -28,23 +31,33 @@ public class REST_server extends AppCompatActivity implements View.OnClickListen
         findViewById(R.id.rest_server_start).setOnClickListener(this);
         findViewById(R.id.rest_server_stop).setOnClickListener(this);
 
-        Enumeration<NetworkInterface> interfaces;
-
         try {
-            interfaces = getNetworkInterfaces();
-            NetworkInterface current;
+            Enumeration<NetworkInterface> interfaces = getNetworkInterfaces();
+            NetworkInterface currentInterface;
             while (interfaces.hasMoreElements()) {
-                current = interfaces.nextElement();
-                String interfaceDisplayName = current.getDisplayName();
+
+                currentInterface = interfaces.nextElement();
+                String interfaceDisplayName = currentInterface.getDisplayName();
                 Log.d(TAG, interfaceDisplayName);
+
                 if (interfaceDisplayName.contains("wlan0")) {
-                    mWlanInterface = current;
+                    mWlanInterface = currentInterface;
                     Log.d(TAG, "Found wlan0!");
+                    Enumeration<InetAddress> addresses = mWlanInterface.getInetAddresses();
+                    InetAddress currentAddress = InetAddress.getLoopbackAddress();
+
+                    while (addresses.hasMoreElements()) {
+                        currentAddress = addresses.nextElement();
+                        Log.d(TAG, currentAddress.toString());
+
+                        // Hacky way to maybe select the IPv4 address?
+                        if (currentAddress.getAddress().length == 4) {
+                            mInetAddress = currentAddress;
+                        }
+                    }
+
                 }
             }
-
-
-
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -57,10 +70,14 @@ public class REST_server extends AppCompatActivity implements View.OnClickListen
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.rest_server_start:
+                Log.d(TAG, "Click server start registered");
+                Intent intent = new Intent(this, ServerService.class);
 
+                intent.putExtra("IPAddress", mInetAddress);
+                startService(intent);
                 break;
             case R.id.rest_server_stop:
-
+                stopService(new Intent(this, ServerService.class));
                 break;
         }
     }
