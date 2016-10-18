@@ -12,5 +12,8 @@
     <string name="make_text_request">Make a text request</string>
     <string name="make_raw_request">Make a raw request</string>
     <string name="make_json_request">Make a JSON request</string>
+    <string name="start_service">Start service</string>
+    <string name="stop_service">Stop service</string>
+    <string name="no_info">No info</string>
     make_url_request
 </resources>
