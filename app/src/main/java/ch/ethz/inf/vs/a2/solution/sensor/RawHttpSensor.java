@@ -20,7 +20,6 @@ public class RawHttpSensor extends AbstractSensor {
 
     @Override
     public String executeRequest() throws Exception {
-        Log.d(TAG, "Arrived in executeRequest");
 
         // Bind to a port etc, pretty automatic, it even does DNS-lookup and everything for us
         Socket socket = new Socket(mHost, mPort);
@@ -49,7 +48,6 @@ public class RawHttpSensor extends AbstractSensor {
 
     @Override
     public double parseResponse(String response) {
-        Log.d(TAG, "Arrived in parseResponse");
         // Since the unit test ensures we set the Accept header to text/html we are going to have
         // to find the value from within the HTML here, which is a bit roundabout
 

@@ -1,13 +1,12 @@
 package ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices;
 
-import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 import ch.ethz.inf.vs.a2.sensor.SensorListener;
+import ch.ethz.inf.vs.a2.solution.sensor.JsonSensor;
 import ch.ethz.inf.vs.a2.solution.sensor.RawHttpSensor;
 import ch.ethz.inf.vs.a2.solution.sensor.TextSensor;
 
@@ -18,6 +17,7 @@ public class REST_client extends AppCompatActivity implements SensorListener, Vi
     private RawHttpSensor mRawHttpSensor;
     private TextSensor mTextSensor;
     private TextView mTextView;
+    private JsonSensor mJsonSensor;
 
 
     @Override
@@ -33,17 +33,15 @@ public class REST_client extends AppCompatActivity implements SensorListener, Vi
         mTextSensor = new TextSensor();
         mTextSensor.registerListener(this);
 
+        // Create JsonSensor and make our activity a listener of it, so we can display the result
+        mJsonSensor = new JsonSensor();
+        mJsonSensor.registerListener(this);
+
         // Find the TextView for displaying results
         mTextView = (TextView) findViewById(R.id.rest_client_text_view);
-        findViewById(R.id.rest_client_again_button).setOnClickListener(this);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        // MAke the first request with the RawHttpSensor
-        mRawHttpSensor.getTemperature();
+        findViewById(R.id.rest_client_raw_button).setOnClickListener(this);
+        findViewById(R.id.rest_client_text_request).setOnClickListener(this);
+        findViewById(R.id.rest_client_json_button).setOnClickListener(this);
     }
 
     @Override
@@ -69,8 +67,14 @@ public class REST_client extends AppCompatActivity implements SensorListener, Vi
     public void onClick(View v) {
         // Register the Again Button to the TextSensor
         switch (v.getId()) {
-            case R.id.rest_client_again_button:
+            case R.id.rest_client_raw_button:
+                mRawHttpSensor.getTemperature();
+                break;
+            case R.id.rest_client_text_request:
                 mTextSensor.getTemperature();
+                break;
+            case R.id.rest_client_json_button:
+                mJsonSensor.getTemperature();
                 break;
         }
     }

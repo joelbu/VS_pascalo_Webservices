@@ -9,5 +9,8 @@
     <string name="no_data_to_display">No Data to display</string>
     <string name="temperature_is">Temperature is:</string>
     <string name="degree_symbol">°C</string>
-    <string name="again">Again</string>
+    <string name="make_text_request">Make a text request</string>
+    <string name="make_raw_request">Make a raw request</string>
+    <string name="make_json_request">Make a JSON request</string>
+    make_url_request
 </resources>
