@@ -18,15 +18,15 @@ import ch.ethz.inf.vs.a2.sensor.AbstractSensor;
 
 public class XmlSensor extends AbstractSensor{
     private final String TAG = "AbstractSensor";
-    private final String mPath = "/SunSPOTWebservice/getSpotRequest";
+    private final String mPath = "/SunSPOTWebServices/SunSPOTWebservice";
 
     @Override
     public String executeRequest() throws Exception {
-        URL url = new URL("http", "webservices.vslecture.vs.inf.ethz.ch", RemoteServerConfiguration.SOAP_PORT, mPath);
+        URL url = new URL("http", RemoteServerConfiguration.HOST, RemoteServerConfiguration.SOAP_PORT, mPath);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
         connection.setDoOutput(true);
-        connection.setRequestProperty("Accept", "application/xml");
+        connection.setRequestProperty("Content-Type", "text/xml");
 
         // Write the request into the socket thereby sending it to the server
         PrintWriter printwriter = new PrintWriter(connection.getOutputStream());
