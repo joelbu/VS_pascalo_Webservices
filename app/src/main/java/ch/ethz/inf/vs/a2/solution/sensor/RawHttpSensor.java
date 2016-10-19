@@ -61,6 +61,6 @@ public class RawHttpSensor extends AbstractSensor {
             valueText = valueText.substring(0, 3);
         }
 
-        return Double.valueOf(valueText).doubleValue();
+        return Double.parseDouble(valueText);
     }
 }

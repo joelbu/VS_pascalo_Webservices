@@ -38,6 +38,6 @@ public class TextSensor extends AbstractSensor {
 
     @Override
     public double parseResponse(String response) {
-        return Double.valueOf(response).doubleValue();
+        return Double.parseDouble(response);
     }
 }
