@@ -15,5 +15,7 @@
     <string name="start_service">Start service</string>
     <string name="stop_service">Stop service</string>
     <string name="no_info">No info</string>
+    <string name="make_manual_soap_request">Make manual SOAP request</string>
+    <string name="make_library_soap_request">Make library SOAP request</string>
     make_url_request
 </resources>

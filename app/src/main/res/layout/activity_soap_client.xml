@@ -10,4 +10,19 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices.SOAP_client">
 
+    <Button
+        android:text="@string/make_manual_soap_request"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/soap_client_manual_button"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:text="@string/make_library_soap_request"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/soap_client_library_button"
+        android:layout_below="@+id/soap_client_manual_button"
+        android:layout_alignParentStart="true" />
 </RelativeLayout>
