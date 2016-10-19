@@ -25,4 +25,12 @@
         android:id="@+id/soap_client_library_button"
         android:layout_below="@+id/soap_client_manual_button"
         android:layout_alignParentStart="true" />
+
+    <TextView
+        android:text="\?"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:id="@+id/soap_client_temperature_display" />
 </RelativeLayout>

@@ -3,6 +3,9 @@ package ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
+
+import org.w3c.dom.Text;
 
 import ch.ethz.inf.vs.a2.sensor.SensorListener;
 import ch.ethz.inf.vs.a2.solution.sensor.XmlSensor;
@@ -22,7 +25,7 @@ public class SOAP_client extends AppCompatActivity implements SensorListener,  V
 
     @Override
     public void onReceiveSensorValue(double value) {
-
+        ((TextView) findViewById(R.id.soap_client_temperature_display)).setText(String.valueOf(value));
     }
 
     @Override

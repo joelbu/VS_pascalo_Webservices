@@ -2,9 +2,13 @@ package ch.ethz.inf.vs.a2.solution.sensor;
 
 import android.util.Log;
 
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -56,6 +60,29 @@ public class XmlSensor extends AbstractSensor{
     @Override
     public double parseResponse(String response) {
         Log.d(TAG, response);
-        return 0;
+        double result = -1000.0;
+        try {
+            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+            factory.setNamespaceAware(true);
+            XmlPullParser xpp = factory.newPullParser();
+
+            xpp.setInput( new StringReader(response ) );
+            int eventType = xpp.getEventType();
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if(eventType == XmlPullParser.START_TAG && xpp.getName().equals("temperature")) {
+                    xpp.next();
+                    result = Double.parseDouble(xpp.getText());
+                }
+                eventType = xpp.next();
+            }
+            System.out.println("End document");
+
+        }
+        catch(Exception e) {
+            // Do nothing
+            Log.d(TAG, "Pull parser failed");
+            e.printStackTrace();
+        }
+        return result;
     }
 }
