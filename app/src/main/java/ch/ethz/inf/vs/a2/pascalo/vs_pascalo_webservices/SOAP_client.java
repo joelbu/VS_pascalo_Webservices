@@ -23,12 +23,15 @@ public class SOAP_client extends AppCompatActivity implements SensorListener,  V
         setContentView(R.layout.activity_soap_client);
 
         mResponseTextView = (TextView) findViewById(R.id.soap_client_temperature_display);
+        findViewById(R.id.soap_client_manual_button).setOnClickListener(this);
+        findViewById(R.id.soap_client_library_button).setOnClickListener(this);
 
         mXmlSensor = new XmlSensor();
-        findViewById(R.id.soap_client_manual_button).setOnClickListener(this);
+        mXmlSensor.registerListener(this);
 
         mSoapSensor = new SoapSensor();
-        findViewById(R.id.soap_client_library_button).setOnClickListener(this);
+        mSoapSensor.registerListener(this);
+
     }
 
     @Override

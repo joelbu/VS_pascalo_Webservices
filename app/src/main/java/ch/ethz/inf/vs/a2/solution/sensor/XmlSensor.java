@@ -70,6 +70,7 @@ public class XmlSensor extends AbstractSensor{
             int eventType = xpp.getEventType();
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 if(eventType == XmlPullParser.START_TAG && xpp.getName().equals("temperature")) {
+                    Log.d(TAG, "Found temperature tag");
                     xpp.next();
                     result = Double.parseDouble(xpp.getText());
                 }
