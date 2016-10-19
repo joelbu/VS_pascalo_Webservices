@@ -8,24 +8,32 @@ import android.widget.TextView;
 import org.w3c.dom.Text;
 
 import ch.ethz.inf.vs.a2.sensor.SensorListener;
+import ch.ethz.inf.vs.a2.solution.sensor.SoapSensor;
 import ch.ethz.inf.vs.a2.solution.sensor.XmlSensor;
 
 public class SOAP_client extends AppCompatActivity implements SensorListener,  View.OnClickListener {
 
     private XmlSensor mXmlSensor;
+    private SoapSensor mSoapSensor;
+    private TextView mResponseTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_soap_client);
 
+        mResponseTextView = (TextView) findViewById(R.id.soap_client_temperature_display);
+
         mXmlSensor = new XmlSensor();
         findViewById(R.id.soap_client_manual_button).setOnClickListener(this);
+
+        mSoapSensor = new SoapSensor();
+        findViewById(R.id.soap_client_library_button).setOnClickListener(this);
     }
 
     @Override
     public void onReceiveSensorValue(double value) {
-        ((TextView) findViewById(R.id.soap_client_temperature_display)).setText(String.valueOf(value));
+        mResponseTextView.setText(String.valueOf(value));
     }
 
     @Override
@@ -35,6 +43,14 @@ public class SOAP_client extends AppCompatActivity implements SensorListener,  V
 
     @Override
     public void onClick(View v) {
-        mXmlSensor.getTemperature();
+        // Register the buttons to the sensors
+        switch (v.getId()) {
+            case R.id.soap_client_manual_button:
+                mXmlSensor.getTemperature();
+                break;
+            case R.id.soap_client_library_button:
+                mSoapSensor.getTemperature();
+                break;
+        }
     }
 }
