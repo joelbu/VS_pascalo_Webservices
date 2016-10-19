@@ -1,7 +1,12 @@
 package ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -123,7 +128,7 @@ public class ServerService extends Service {
         }
     }
 
-    private class RequestHandler implements Runnable {
+    private class RequestHandler implements Runnable, SensorEventListener {
         private final String RHTAG = "RequestHandler";
         private final String URI_PREFIX = "ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices.";
         Socket mSocket;
@@ -136,15 +141,13 @@ public class ServerService extends Service {
         public void run() {
             Log.d(RHTAG, "There was a request that reached the request handler from address: " + mSocket.getInetAddress());
 
-
-
             try {
                 // Reading the request
 
                 // The input stream provides the request data
                 InputStream inputStream = mSocket.getInputStream();
                 String method = "no method";
-                String resource_URI = "no_resource";
+                String resource_name = "no_resource";
 
                 // Again: This is the most efficient way to get a String from the stream apparently
                 ByteArrayOutputStream result = new ByteArrayOutputStream();
@@ -174,37 +177,75 @@ public class ServerService extends Service {
                 int resource_uri_start = request.indexOf(URI_PREFIX, resource_uri_head);
                 int resource_uri_end = request.indexOf("\r", resource_uri_start + URI_PREFIX.length());
                 if (resource_uri_head != -1 && resource_uri_start !=-1 && resource_uri_end != -1) {
-                    resource_URI = request.substring(resource_uri_start + URI_PREFIX.length(), resource_uri_end);
-                    Log.d(TAG, "Resource: " + resource_URI);
+                    resource_name = request.substring(resource_uri_start + URI_PREFIX.length(), resource_uri_end);
+                    Log.d(TAG, "Resource: " + resource_name);
                 }
                 else {
                     Log.d(TAG, "Input request misses resource URI field or it is corrupted. Request: " + request);
                 }
 
-
                 //Log.d(TAG, request);
 
-
-                // outputStream can be used to send a response back to the client
-                OutputStream outputStream = mSocket.getOutputStream();
-
-                // printing a constant in text/plain mode should be fine, right?
-                PrintWriter printwriter = new PrintWriter(outputStream);
-                printwriter.print("66.66");
-                printwriter.flush();
-                //printwriter.close();
-
-
-
-
-
-
-                // Properly close the socket to release resources
-                mSocket.close();
+                // Handle request and listen to event
+                SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+                if( method.equals("POST") ) {
+                    if(resource_name.equals("acceleration")) {
+                        // register event listener //TODO: unregister //TODO adapt manifest for sensors, get access rights
+                        Sensor sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+                        mSensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+                    }
+                    else {
+                        // Send 404 back ?
+                        sendHtml("<h2>Resource " + resource_name +" not found</h2>");
+                    }
+                }
+                else { // unhandled HTTP method
+                    // Send error 405 back ?
+                    sendHtml("<h2>Method " + method + " not allowed</h2>");
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
+        }
+
+        private void sendHtml(String body) {
+            // Create HTML document
+            String html_doc = "<!DOCTYPE html>\n" +
+                    "<html>\n" +
+                    "<head>\n" +
+                    "<title>VS Pascalo</title>\n" +
+                    "</head>\n" +
+                    "<body>\n" +
+                    body +
+                    "</body>\n" +
+                    "</html>";
+            try {
+                // outputStream can be used to send a response back to the client
+                OutputStream outputStream = mSocket.getOutputStream();
+
+                // printing html document
+                PrintWriter printwriter = new PrintWriter(outputStream);
+                printwriter.print(html_doc);
+                printwriter.flush();
+                //printwriter.close();
+
+                // Properly close the socket to release resources
+                mSocket.close();
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            //TODO Read value and write it in HTML body
+            sendHtml("<h3>No value</h3>");
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+            // Do nothing
         }
     }
 }
