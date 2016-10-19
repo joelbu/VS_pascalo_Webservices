@@ -2,6 +2,7 @@ package ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 

@@ -73,8 +73,15 @@ public class REST_server extends AppCompatActivity implements View.OnClickListen
                 Log.d(TAG, "Click server start registered");
                 Intent intent = new Intent(this, ServerService.class);
 
-                intent.putExtra("IPAddress", mInetAddress);
-                startService(intent);
+                // mInetAddress is null if, for example, the device has no internet connection
+                if (mInetAddress != null){
+                    intent.putExtra("IPAddress", mInetAddress);
+                    startService(intent);
+                }
+
+                else {
+                    Log.d(TAG, "No IP address found, server could not be started.");
+                }
                 break;
             case R.id.rest_server_stop:
                 stopService(new Intent(this, ServerService.class));

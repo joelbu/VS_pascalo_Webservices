@@ -6,6 +6,8 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -123,6 +125,7 @@ public class ServerService extends Service {
 
     private class RequestHandler implements Runnable {
         private final String RHTAG = "RequestHandler";
+        private final String URI_PREFIX = "ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices.";
         Socket mSocket;
 
         public RequestHandler(Socket socket) {
@@ -133,8 +136,56 @@ public class ServerService extends Service {
         public void run() {
             Log.d(RHTAG, "There was a request that reached the request handler from address: " + mSocket.getInetAddress());
 
+
+
             try {
-                // Reading the request? Nah, I don't care.
+                // Reading the request
+
+                // The input stream provides the request data
+                InputStream inputStream = mSocket.getInputStream();
+                String method = "no method";
+                String resource_URI = "no_resource";
+
+                // Again: This is the most efficient way to get a String from the stream apparently
+                ByteArrayOutputStream result = new ByteArrayOutputStream();
+                // How big can a request be?
+                byte[] buffer = new byte[256];
+                int length;
+                // FIXME: This loop is blocking until the request from the clinet is cancled
+                while ((length = inputStream.read(buffer)) != -1) {
+                    //Log.d(TAG, "Extracting a buffer.");
+                    result.write(buffer, 0, length);
+                }
+
+                String request = result.toString("UTF-8");
+
+                // Parsing Method from request string
+                int first_word_index = request.indexOf(' ');
+                if (first_word_index != -1) {
+                    method = request.substring(0, first_word_index);
+                    Log.d(TAG, "Method: " + method);
+                }
+                else {
+                    Log.d(TAG, "Input request is corrupted: " + request);
+                }
+
+                // Parsing resource URI from request string
+                int resource_uri_head = request.indexOf("name=\"resource\"");
+                int resource_uri_start = request.indexOf(URI_PREFIX, resource_uri_head);
+                int resource_uri_end = request.indexOf("\r", resource_uri_start + URI_PREFIX.length());
+                if (resource_uri_head != -1 && resource_uri_start !=-1 && resource_uri_end != -1) {
+                    resource_URI = request.substring(resource_uri_start + URI_PREFIX.length(), resource_uri_end);
+                    Log.d(TAG, "Resource: " + resource_URI);
+                }
+                else {
+                    Log.d(TAG, "Input request misses resource URI field or it is corrupted. Request: " + request);
+                }
+
+
+                //Log.d(TAG, request);
+
+
+                // outputStream can be used to send a response back to the client
                 OutputStream outputStream = mSocket.getOutputStream();
 
                 // printing a constant in text/plain mode should be fine, right?
