@@ -152,12 +152,22 @@ public class ServerService extends Service {
                 // Again: This is the most efficient way to get a String from the stream apparently
                 ByteArrayOutputStream result = new ByteArrayOutputStream();
                 // How big can a request be?
+                int max_length = 1024 * 1024;
                 byte[] buffer = new byte[256];
-                int length;
+                int length = 0;
                 // FIXME: This loop is blocking until the request from the clinet is cancled
-                while ((length = inputStream.read(buffer)) != -1) {
+                while (length < max_length && (length = inputStream.read(buffer)) != -1 ) {
                     //Log.d(TAG, "Extracting a buffer.");
                     result.write(buffer, 0, length);
+
+                    // Parsing Content-Length from request string
+                    String temp = result.toString("UTF-8");
+                    int content_length_head_index = temp.indexOf("Content-Length:");
+                    if (content_length_head_index != -1) {
+                        int end_value_index = temp.indexOf('\n', content_length_head_index + 16);
+                        max_length = Integer.parseInt(temp.substring(content_length_head_index + 16, end_value_index).trim()); // TODO: Handle exeption
+                        Log.d(TAG, "content-length: " + max_length);
+                    }
                 }
 
                 String request = result.toString("UTF-8");
@@ -184,15 +194,14 @@ public class ServerService extends Service {
                     Log.d(TAG, "Input request misses resource URI field or it is corrupted. Request: " + request);
                 }
 
-                //Log.d(TAG, request);
+                Log.d(TAG, request);
 
                 // Handle request and listen to event
                 SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
                 if( method.equals("POST") ) {
                     if(resource_name.equals("acceleration")) {
-                        // register event listener //TODO: unregister //TODO adapt manifest for sensors, get access rights
-                        Sensor sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-                        mSensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+                        double a = 9.81; // TODO: Read actual value
+                        sendHtml("<p>" + String.valueOf(a) + "m/s<sup>2</sup></p>");
                     }
                     else {
                         // Send 404 back ?
