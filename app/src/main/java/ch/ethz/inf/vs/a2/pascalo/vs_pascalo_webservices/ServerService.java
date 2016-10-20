@@ -150,10 +150,17 @@ public class ServerService extends Service {
                 byte[] buffer = new byte[BUFFER_SIZE];
                 int bytesRead = 0;
 
+
+                // You can treat a ByteArrayOutputStream as a byte array with automatic resizing
+                // basically
                 ByteArrayOutputStream requestBytes = new ByteArrayOutputStream();
+
+                // This string will hold the part of the request we have read
                 String request = "";
                 String requestBody = ""; // Might remain empty
 
+                // Do a first read. The InputSteam.read function will attempt to read up to the
+                // size of buffer number of bytes, but the lower bound is just one byte
                 if ((bytesRead = inputStream.read(buffer)) < 1){
                     // No request at all, something is broken
                     requestBytes.close();
@@ -161,9 +168,14 @@ public class ServerService extends Service {
                     return;
                 }
 
+                // Shovel from the small into the dynamic buffer
                 requestBytes.write(buffer, 0, bytesRead);
+
+                // Build a string of what we have so far
                 request = requestBytes.toString("UTF-8");
 
+                // See if the end of the header is already in it otherwise repeat
+                // the reading process
                 while(request.indexOf("\r\n\r\n") == -1) {
 
                     // This should not block, because if there hasn't been a double linebreak the
@@ -181,14 +193,22 @@ public class ServerService extends Service {
 
                 }
 
-                // Once we reach this point we have the whole header or a bit more, both as a byte
-                // sequence in the requestBytes and a String in the request variables. All the
-                // characters up to the double linebreak should be ASCII, which is a subset of
-                // UTF-8 and most importantly each character has one byte, so we can properly
-                // calculate from where the number of bytes in the Content-Length field starts
-                // counting. The next step is parsing the header.
+                // Once we reach this point we have the whole header or maybe a bit more, both as a
+                // byte sequence in the requestBytes and a String in the request variables. All the
+                // characters up to the double linebreak should be ASCII according to the W3C.
+                // ASCII is a subset of UTF-8 and most importantly each character has one byte,
+                // so we can properly calculate from where the number of bytes in the
+                // Content-Length field starts counting.
+                // The next step is parsing the header.
 
+                // This hash map is for storing header fields and their contents. It might be
+                // overkill, but it has a nice interface, so why not
                 HashMap<String, String> headerFields = new HashMap<>(10);
+
+                // The scanner iterates over whitespace-separated tokens and is nice to use
+                // It can do a lot more, like scanning for regex but I didn't use any of that
+                // It can also work on streams which I tried, but even when we use a String as
+                // input it has the nice property that it doesn't make multiple passes
                 Scanner scanner = new Scanner(request);
 
                 // Parse first line
@@ -225,7 +245,11 @@ public class ServerService extends Service {
 
                     int stillToRead = contentLength + headerLength - requestBytes.size();
 
-                    // Read in the rest of the request body
+                    // Sanity check on the request size, PHP's default is 2MB
+                    if (stillToRead > 2 * 1024 * 1024) stillToRead = 2 * 1024 * 1024;
+
+                    // Read in the rest of the request body, in the same manner as before only with
+                    // an added upper bound of stillToRead
                     while (stillToRead > 0){
 
                         bytesRead = inputStream.read(buffer, 0, buffer.length < stillToRead ? buffer.length : stillToRead);
