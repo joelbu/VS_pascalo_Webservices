@@ -14,20 +14,19 @@ import android.util.Log;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.HashMap;
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Created by Joel on 18.10.2016.
- */
 
 public class ServerService extends Service {
     private final String TAG = "ServerService";
@@ -132,6 +131,7 @@ public class ServerService extends Service {
         private final String RHTAG = "RequestHandler";
         private final String URI_PREFIX = "ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices.";
         Socket mSocket;
+        private final int BUFFER_SIZE = 128;
 
         public RequestHandler(Socket socket) {
             mSocket = socket;
@@ -146,42 +146,124 @@ public class ServerService extends Service {
 
                 // The input stream provides the request data
                 InputStream inputStream = mSocket.getInputStream();
-                String method = "no method";
-                String resource_name = "no_resource";
 
-                // Again: This is the most efficient way to get a String from the stream apparently
-                ByteArrayOutputStream result = new ByteArrayOutputStream();
-                // How big can a request be?
-                int max_length = 1024 * 1024;
-                byte[] buffer = new byte[256];
-                int length = 0;
-                // FIXME: This loop is blocking until the request from the clinet is cancled
-                while (length < max_length && (length = inputStream.read(buffer)) != -1 ) {
-                    //Log.d(TAG, "Extracting a buffer.");
-                    result.write(buffer, 0, length);
+                byte[] buffer = new byte[BUFFER_SIZE];
+                int bytesRead = 0;
 
-                    // Parsing Content-Length from request string
-                    String temp = result.toString("UTF-8");
-                    int content_length_head_index = temp.indexOf("Content-Length:");
-                    if (content_length_head_index != -1) {
-                        int end_value_index = temp.indexOf('\n', content_length_head_index + 16);
-                        max_length = Integer.parseInt(temp.substring(content_length_head_index + 16, end_value_index).trim()); // TODO: Handle exeption
-                        Log.d(TAG, "content-length: " + max_length);
+                ByteArrayOutputStream requestBytes = new ByteArrayOutputStream();
+                String request = "";
+                String requestBody = ""; // Might remain empty
+
+                if ((bytesRead = inputStream.read(buffer)) < 1){
+                    // No request at all, something is broken
+                    requestBytes.close();
+                    mSocket.close();
+                    return;
+                }
+
+                requestBytes.write(buffer, 0, bytesRead);
+                request = requestBytes.toString("UTF-8");
+
+                while(request.indexOf("\r\n\r\n") == -1) {
+
+                    // This should not block, because if there hasn't been a double linebreak the
+                    // header is not even done, so on a new read attempt there must be at least one
+                    // byte available.
+                    if ((bytesRead = inputStream.read(buffer)) == -1 ){
+                        // No full header, something is broken
+                        requestBytes.close();
+                        mSocket.close();
+                        return;
                     }
+
+                    requestBytes.write(buffer, 0, bytesRead);
+                    request = requestBytes.toString("UTF-8");
+
                 }
 
-                String request = result.toString("UTF-8");
+                // Once we reach this point we have the whole header or a bit more, both as a byte
+                // sequence in the requestBytes and a String in the request variables. All the
+                // characters up to the double linebreak should be ASCII, which is a subset of
+                // UTF-8 and most importantly each character has one byte, so we can properly
+                // calculate from where the number of bytes in the Content-Length field starts
+                // counting. The next step is parsing the header.
 
-                // Parsing Method from request string
-                int first_word_index = request.indexOf(' ');
-                if (first_word_index != -1) {
-                    method = request.substring(0, first_word_index);
-                    Log.d(TAG, "Method: " + method);
-                }
-                else {
-                    Log.d(TAG, "Input request is corrupted: " + request);
+                HashMap<String, String> headerFields = new HashMap<>(10);
+                Scanner scanner = new Scanner(request);
+
+                // Parse first line
+                String method = scanner.next();
+                String uri = scanner.next();
+                String httpVersion = scanner.next();
+                scanner.nextLine();
+
+
+                // Parse the rest of the header fields until the empty line, which indicates the
+                // end of the header
+                String line;
+                String[] tokens;
+                while (!(line = scanner.nextLine()).equals("")) {
+
+                    // According to rfc2616 section4.2 the header field are followed by a colon
+                    // and one or more whitespace characters.
+                    tokens = line.split("[:][ ]+", 2);
+
+                    // Same source:  The names are case-insensitive.
+                    headerFields.put(tokens[0].toLowerCase(), tokens[1]);
                 }
 
+                int contentLength;
+
+                // Now we can finally try to read the Content-Length field
+                if (headerFields.containsKey("content-length")) {
+
+                    contentLength = Integer.parseInt(headerFields.get("content-length"));
+                    Log.d(TAG, "contentLength (from HashMap): " + contentLength);
+
+                    // ASCII so this is number of characters and number of bytes
+                    int headerLength = request.indexOf("\r\n\r\n") + 4;
+
+                    int stillToRead = contentLength + headerLength - requestBytes.size();
+
+                    // Read in the rest of the request body
+                    while (stillToRead > 0){
+
+                        bytesRead = inputStream.read(buffer, 0, buffer.length < stillToRead ? buffer.length : stillToRead);
+
+                        if (bytesRead == -1){
+                            // Something went wrong
+                            requestBytes.close();
+                            mSocket.close();
+                            return;
+                        }
+
+                        requestBytes.write(buffer, 0, bytesRead);
+                        request = requestBytes.toString("UTF-8");
+                        stillToRead = stillToRead - bytesRead;
+
+                    }
+
+                    requestBody = request.substring(headerLength);
+
+                } else {
+
+                    // If there is no such field and the connection is not closed then the
+                    // assumption should be that there is no body except, if the request was
+                    // chunked but I think we don't need to handle that
+
+                }
+
+                Log.d(TAG, "Full request read: \n" + request);
+
+                // We can just define our URL scheme ourselves basically. Maybe first layer for
+                // the sensor/actuators distinction, second layer for sensor name, third layer for
+                // some sort of sub selection for example x, y, or z for acceleration? Also watch
+                // out, uriParts[0] is going to be empty because before the first / is only the
+                // empty String.
+                String[] uriParts = uri.split("[/]");
+
+                /*
+                String resource_name = "";
                 // Parsing resource URI from request string
                 int resource_uri_head = request.indexOf("name=\"resource\"");
                 int resource_uri_start = request.indexOf(URI_PREFIX, resource_uri_head);
@@ -196,29 +278,86 @@ public class ServerService extends Service {
 
                 Log.d(TAG, request);
 
-                // Handle request and listen to event
-                SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-                if( method.equals("POST") ) {
-                    if(resource_name.equals("acceleration")) {
-                        double a = 9.81; // TODO: Read actual value
-                        sendHtml("<p>" + String.valueOf(a) + "m/s<sup>2</sup></p>");
+                */
+
+                if (method.equals("GET")) {
+
+                    if (uriParts[1].equals("sensors")) {
+
+                        // Handle request and listen to event
+                        SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+                        if(uriParts[2].equals("acceleration")) {
+                            double x = 9.81; // TODO: Read actual values
+                            double y = 0.45;
+                            double z = 2.14;
+
+                            sendResponse("<p>" + String.valueOf(x) + "m/s<sup>2</sup></p>");
+
+                        } else if (uriParts[2].equals("temperature")) {
+
+                            double a = 21.84; // TODO: Read actual value
+                            sendResponse("<p>" + String.valueOf(a) + "°C</p>");
+
+                        } else {
+                            // Send 404 back ?
+                            sendResponse("<h2>Resource " + uriParts[2] +" not found</h2>");
+                        }
+
+                    } else {
+                        sendResponse("<h2>Method GET not allowed for " + uriParts[1] + "</h2>");
                     }
-                    else {
-                        // Send 404 back ?
-                        sendHtml("<h2>Resource " + resource_name +" not found</h2>");
+                } else if( method.equals("POST") ) {
+
+                    if (uriParts[1].equals("actuators")) {
+
+                        // TODO: read some values from the body (requestBody) and do something with them
+
+                        sendResponse("<h2>Hello yes, I'm an actuator, thanks for POST-ing</h2>");
+
+                    } else {
+
+                        sendResponse("<h2>Method POST not allowed for " + uriParts[1] + "</h2>");
+
                     }
-                }
-                else { // unhandled HTTP method
+
+                } else { // wrong HTTP method
                     // Send error 405 back ?
-                    sendHtml("<h2>Method " + method + " not allowed</h2>");
+                    sendResponse("<h2>Method " + method + " not allowed</h2>");
                 }
+
+
+                if (uriParts[0].equals("sensors")) {
+
+                    // Handle request and listen to event
+
+                    SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+
+                } else if (uriParts[0].equals("actuators")) {
+
+                    if( method.equals("POST") ) {
+
+                        // TODO: read some values from the body and do something
+
+                    } else { // wrong HTTP method
+                        // Send error 405 back ?
+                        sendResponse("<h2>Method " + method + " not allowed for actuators</h2>");
+                    }
+
+                }
+
+
+
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
         }
 
-        private void sendHtml(String body) {
+        private void sendResponse(String body) {
+
             // Create HTML document
             String html_doc = "<!DOCTYPE html>\n" +
                     "<html>\n" +
@@ -229,18 +368,42 @@ public class ServerService extends Service {
                     body +
                     "</body>\n" +
                     "</html>";
+
+            int bodyLength = 9001;
+
+            try {
+                bodyLength = html_doc.getBytes("UTF-8").length;
+            } catch (UnsupportedEncodingException e) {
+                // da passiert eh nöd
+            }
+
+            String header = new StringBuilder(256).append("HTTP/1.1 ").append(" 200 OK\r\n")
+                    .append("Server: ").append("Dini Mueter").append("\r\n")
+                    // the get bytes is important because UTF-8 characters can be longer than one byte each
+                    .append("Content-Length: ").append(bodyLength).append("\r\n")
+                    .append("Cache-Control: no-cache\r\n")
+                    .append("Content-Type: text/html; charset=utf-8\r\n")
+                    .append("Connection: close\r\n\r\n").toString();
+
+
             try {
                 // outputStream can be used to send a response back to the client
                 OutputStream outputStream = mSocket.getOutputStream();
 
+
                 // printing html document
-                PrintWriter printwriter = new PrintWriter(outputStream);
+                PrintWriter printwriter = new PrintWriter(new OutputStreamWriter(outputStream, "UTF-8"));
+                printwriter.print(header);
                 printwriter.print(html_doc);
                 printwriter.flush();
-                //printwriter.close();
 
-                // Properly close the socket to release resources
+
+                // Properly close the socket to release resources, this will automatically close
+                // the input and output streams as well
                 mSocket.close();
+
+                Log.d(TAG, "sending response: \n" + html_doc);
+
             } catch(Exception e) {
                 e.printStackTrace();
             }
@@ -249,7 +412,7 @@ public class ServerService extends Service {
         @Override
         public void onSensorChanged(SensorEvent event) {
             //TODO Read value and write it in HTML body
-            sendHtml("<h3>No value</h3>");
+            sendResponse("<h3>No value</h3>");
         }
 
         @Override

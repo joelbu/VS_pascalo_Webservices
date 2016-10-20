@@ -6,6 +6,7 @@ import ch.ethz.inf.vs.a2.sensor.AbstractSensor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import ch.ethz.inf.vs.a2.solution.http.HttpRawRequestImpl;
@@ -29,7 +30,7 @@ public class RawHttpSensor extends AbstractSensor {
         String request = requestMaker.generateRequest(mHost, mPort, mPath);
 
         // Write the request into the socket thereby sending it to the server
-        PrintWriter printwriter = new PrintWriter(socket.getOutputStream());
+        PrintWriter printwriter = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"));
         printwriter.print(request);
         printwriter.flush();
 
