@@ -7,10 +7,13 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.Vibrator;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -434,62 +437,102 @@ public class ServerService extends Service implements SensorEventListener {
                     // Show description about how to manipulate the actuators
                     else if (uriParts[1].equals("actuators")) {
 
-                        if (uriParts[2].equals("vibrator")) {
-                            vibratorResponse("");
+                        // Splitting the GET values
+                        // In case of no values, the full string is in actuatorUriParts[0]
+                        String[] actuatorUriParts = uriParts[2].split("[?]");
+
+                        // Splitting key-value pairs
+                        String[] keyValuePairs = null;
+                        if (actuatorUriParts.length > 1) {
+                            // storing the key and values in alternating order
+                            keyValuePairs = actuatorUriParts[1].split("[=|&]");
+                        }
+
+                        if (actuatorUriParts[0].equals("vibrator")) {
+                            if (keyValuePairs != null){
+                                if(keyValuePairs[0].equals("time")){
+                                    try {
+                                        //vibrate
+                                        double seconds = Double.parseDouble(keyValuePairs[1]);
+                                        long ms = (long) (1000.0 * seconds);
+                                        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                        v.vibrate(ms);
+                                    }
+                                    catch(Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                            // Respond with html document
+                            sendResponse(buildHTMLBodyWithHomeButton(
+                                    "<form action=\"\" method=\"get\">\n" +
+                                            "<h2>Vibrator</h2>" +
+                                            "<p>The device will vibrate as many seconds as provided for the time value.</p>" +
+                                            "Time (between 0.1 and 10):\n" +
+                                            "<input type=\"number\" name=\"time\" min=\"0.1\" max=\"10\" step=\"0.1\">\n" +
+                                            "<input type=\"submit\">\n" +
+                                            "</form>" +
+                                            "<p>You can also change the number in the URL bar. (e.g. ...vibrator?time=1000.0)</p>"
+                            ));
+                        }
+                        if (actuatorUriParts[0].equals("music_player")) {
+                            if (keyValuePairs != null){
+                                if(keyValuePairs[0].equals("sound")){
+                                    try {
+                                        int sound = Integer.parseInt(keyValuePairs[1]);
+                                        //play sound
+
+                                        int soundFile;
+                                        switch (sound) {
+                                            case 1: soundFile = R.raw.sample_300hz;
+                                                break;
+                                            case 2: soundFile = R.raw.sample_440hz;
+                                                break;
+                                            case 3: soundFile = R.raw.sample_650hz;
+                                                break;
+                                            default: soundFile = R.raw.sample_440hz;
+                                                break;
+                                        }
+
+                                        MediaPlayer mp = MediaPlayer.create(
+                                                getApplicationContext(),
+                                                soundFile
+                                        );
+                                        mp.setLooping(false);
+                                        mp.start();
+                                    } catch(Exception e) {e.printStackTrace();}
+                                }
+                            }
+                            // Respond with html document
+                            sendResponse(buildHTMLBodyWithHomeButton(
+                                    "<form action=\"\" method=\"get\">" +
+                                            "<h2>Music player</h2>" +
+                                            "<p>The device can play different sounds.</p>" +
+                                            "<select name=\"sound\">" +
+                                            "<option value=\"1\">Sound 1</option>" +
+                                            "<option value=\"2\">Sound 2</option>" +
+                                            "<option value=\"3\">Sound 3</option>" +
+                                            "</select>" +
+                                            "<input type=\"submit\">\n" +
+                                            "</form>" +
+                                            "<p>You can also change the sound in the URL bar. Numbers 1-3 are accepted. (e.g. ...music_player?sound=1)</p>"
+                            ));
                         }
                         else {
                             sendResponse(buildHTMLBodyWithHomeButton(
                                     "<h2>Unknown actuator</h2>"));
                         }
+
                     }
                     else {
                         sendResponse(buildHTMLBodyWithHomeButton(
                                 "<h2>Method GET not allowed for " + uriParts[1] + "</h2>"));
                     }
-                } else if( method.equals("POST") ) {
-
-                    if (uriParts[1].equals("actuators")) {
-
-                        // TODO: read some values from the body (requestBody) and do something with them
-
-                        if (uriParts[2].equals("vibrator")) {
-                            vibratorResponse("");
-                        }
-
-                    } else {
-
-                        sendResponse(buildHTMLBodyWithHomeButton(
-                                "<h2>Method POST not allowed for " + uriParts[1] + "</h2>"));
-
-                    }
-
                 } else { // wrong HTTP method
                     // Send error 405 back ?
                     sendResponse(buildHTMLBodyWithHomeButton(
                             "<h2>Method " + method + " not allowed</h2>"));
                 }
-
-
-               /* if (uriParts[0].equals("sensors")) {
-
-                    // Handle request and listen to event
-
-                    SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-
-
-                } else if (uriParts[0].equals("actuators")) {
-
-                    if( method.equals("POST") ) {
-
-                        // TODO: read some values from the body and do something
-
-                    } else { // wrong HTTP method
-                        // Send error 405 back ?
-                        sendResponse(buildHTMLBodyWithHomeButton(
-                                "<h2>Method " + method + " not allowed for actuators</h2>"));
-                    }
-
-                }*/
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -499,16 +542,16 @@ public class ServerService extends Service implements SensorEventListener {
 
 
 
-        private void vibratorResponse(String footer){
+    /*    private void vibratorResponse(String footer){
             sendResponse(buildHTMLBodyWithHomeButton( //TODO description
-                    "<form action=\"\">\n" +
+                    "<form action=\"\" method=\"post\">\n" +
                             "Time (between 1 and 10):\n" +
-                            "<input type=\"number\" name=\"quantity\" min=\"1\" max=\"10\" step=\"0.1\">\n" +
+                            "<input type=\"number\" name=\"time\" min=\"1\" max=\"10\" step=\"0.1\">\n" +
                             "<input type=\"submit\">\n" +
                             "</form>" +
                             footer
             ));
-        }
+        }*/
 
         private String buildHTMLBodyWithHomeButton(String body){
             return buildHTMLBody( "<a href=\"/\">&larr; Home</a><br>" + body);
