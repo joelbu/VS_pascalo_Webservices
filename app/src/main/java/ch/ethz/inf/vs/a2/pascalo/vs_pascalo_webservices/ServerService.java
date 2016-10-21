@@ -23,6 +23,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -149,7 +150,12 @@ public class ServerService extends Service {
         public void run() {
 
             STI = new SensorTypesImpl();
+            SensorManager mgr = (SensorManager) getSystemService(SENSOR_SERVICE);
+            List<Sensor> sensors = mgr.getSensorList(Sensor.TYPE_ALL);
 
+            for(Sensor s : sensors) {
+                mgr.registerListener(this, s, SensorManager.SENSOR_DELAY_NORMAL);
+            }
 
 
         }
