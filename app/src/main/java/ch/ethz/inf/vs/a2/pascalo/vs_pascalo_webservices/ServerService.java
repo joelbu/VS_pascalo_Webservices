@@ -7,7 +7,10 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -29,14 +32,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-public class ServerService extends Service {
+public class ServerService extends Service implements SensorEventListener {
     private final String TAG = "ServerService";
     private Webserver mWebserver;
     private int mPort = 8088;
 
 
     private volatile float mTempurature;
-
+    private volatile float mAmbientTempurature;
     private volatile float mLight;
     private volatile float mPressure;
     private volatile float mProximity;
@@ -49,6 +52,8 @@ public class ServerService extends Service {
     private volatile float[] mOrientation;
     private volatile float[] mRotation;
 
+    private HandlerThread mHandlerThread;
+
 
     // We do not need this, but per the documentation we need to return null
     @Nullable
@@ -59,6 +64,24 @@ public class ServerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
+        mHandlerThread = new HandlerThread("SensorListener");
+        mHandlerThread.start();
+        Looper looper = mHandlerThread.getLooper();
+        Handler handler = new Handler(looper);
+
+        SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        List<Sensor> sensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
+
+        for(Sensor s : sensors) {
+            // The callbacks should be executed on the handler thread this way
+            if (SensorTypesImpl.getNameFromType(s.getType()).equals("nosensor")) {
+                Log.d(TAG, "Will ignore this sensor: " + s.getName() + " type: " + s.getType());
+            } else {
+                sensorManager.registerListener(this, s, SensorManager.SENSOR_DELAY_NORMAL, handler);
+            }
+
+        }
 
         InetAddress inetAddress = (InetAddress) intent.getSerializableExtra("IPAddress");
 
@@ -84,12 +107,69 @@ public class ServerService extends Service {
         try {
             // This should release the blocking accept() from the Webserver thread
             mWebserver.mServerSocket.close();
+            mHandlerThread.quit();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         // This sets the isInterrupted flag in the Webserver and terminates interruptible methods
         mWebserver.interrupt();
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        Sensor respondingSensor = event.sensor;
+        switch (respondingSensor.getType()) {
+            case Sensor.TYPE_TEMPERATURE:
+            case 65536:
+                mTempurature = event.values[0];
+                break;
+            case Sensor.TYPE_AMBIENT_TEMPERATURE:
+                mAmbientTempurature = event.values[0];
+                break;
+            case Sensor.TYPE_LIGHT:
+                mLight = event.values[0];
+                break;
+            case Sensor.TYPE_PRESSURE:
+                mPressure = event.values[0];
+                break;
+            case Sensor.TYPE_PROXIMITY:
+                mProximity = event.values[0];
+                break;
+            case Sensor.TYPE_RELATIVE_HUMIDITY:
+                mHumidity = event.values[0];
+                break;
+            case Sensor.TYPE_ACCELEROMETER:
+                mAcceleration = event.values.clone();
+                break;
+            case Sensor.TYPE_GRAVITY:
+                mGravity = event.values.clone();
+                break;
+            case Sensor.TYPE_GYROSCOPE:
+                mGyroscope = event.values.clone();
+                break;
+            case Sensor.TYPE_LINEAR_ACCELERATION:
+                mLinearAcceleration = event.values.clone();
+                break;
+            case Sensor.TYPE_MAGNETIC_FIELD:
+                mMagnetic = event.values.clone();
+                break;
+            case Sensor.TYPE_ORIENTATION:
+                mOrientation = event.values.clone();
+                break;
+            case Sensor.TYPE_ROTATION_VECTOR:
+                mRotation = event.values.clone();
+                break;
+            default:
+                Log.d(TAG, "Unexpected Sensor " +  event.sensor.getName());
+
+        }
+
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Fuck off
     }
 
     private class Webserver extends Thread {
@@ -139,77 +219,6 @@ public class ServerService extends Service {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
-        }
-    }
-
-    private class SensorListenerThread extends Thread implements SensorEventListener {
-        private SensorTypesImpl STI;
-
-        @Override
-        public void run() {
-
-            STI = new SensorTypesImpl();
-            SensorManager mgr = (SensorManager) getSystemService(SENSOR_SERVICE);
-            List<Sensor> sensors = mgr.getSensorList(Sensor.TYPE_ALL);
-
-            for(Sensor s : sensors) {
-                mgr.registerListener(this, s, SensorManager.SENSOR_DELAY_NORMAL);
-            }
-
-
-        }
-
-        @Override
-        public void onSensorChanged(SensorEvent event) {
-            Sensor respondingSensor = event.sensor;
-            switch (respondingSensor.getType()) {
-                case Sensor.TYPE_TEMPERATURE:
-                case Sensor.TYPE_AMBIENT_TEMPERATURE:
-                    mTempurature = event.values.clone()[0];
-                    break;
-                case Sensor.TYPE_LIGHT:
-                    mLight = event.values.clone()[0];
-                    break;
-                case Sensor.TYPE_PRESSURE:
-                    mPressure = event.values.clone()[0];
-                    break;
-                case Sensor.TYPE_PROXIMITY:
-                    mProximity = event.values.clone()[0];
-                    break;
-                case Sensor.TYPE_RELATIVE_HUMIDITY:
-                    mHumidity = event.values.clone()[0];
-                    break;
-                case Sensor.TYPE_ACCELEROMETER:
-                    mAcceleration = event.values.clone();
-                    break;
-                case Sensor.TYPE_GRAVITY:
-                    mGravity = event.values.clone();
-                    break;
-                case Sensor.TYPE_GYROSCOPE:
-                    mGyroscope = event.values.clone();
-                    break;
-                case Sensor.TYPE_LINEAR_ACCELERATION:
-                    mLinearAcceleration = event.values.clone();
-                    break;
-                case Sensor.TYPE_MAGNETIC_FIELD:
-                    mMagnetic = event.values.clone();
-                    break;
-                case Sensor.TYPE_ORIENTATION:
-                    mOrientation = event.values.clone();
-                    break;
-                case Sensor.TYPE_ROTATION_VECTOR:
-                    mRotation = event.values.clone();
-                    break;
-                default:
-                    Log.d(TAG, "Unexpected Sensor");
-
-            }
-
-        }
-
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
         }
     }
@@ -399,16 +408,23 @@ public class ServerService extends Service {
                         SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
                         if(uriParts[2].equals("acceleration")) {
+                            /*
                             double x = 9.81; // TODO: Read actual values
                             double y = 0.45;
                             double z = 2.14;
+                            */
 
-                            sendResponse("<p>" + String.valueOf(x) + "m/s<sup>2</sup></p>");
+                            sendResponse("<p>x: " + String.valueOf(mAcceleration[0]) + "m/s<sup>2</sup></p>\n" +
+                                    "<p>y: " + String.valueOf(mAcceleration[1]) + "m/s<sup>2</sup></p>\n" +
+                                    "<p>z: " + String.valueOf(mAcceleration[2]) + "m/s<sup>2</sup></p>\n");
 
                         } else if (uriParts[2].equals("temperature")) {
-
+                            /*
                             double a = 21.84; // TODO: Read actual value
-                            sendResponse("<p>" + String.valueOf(a) + "°C</p>");
+                            */
+
+                            sendResponse("<p>" + String.valueOf(mTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>\n" +
+                                    "<p>" + String.valueOf(mAmbientTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>");
 
                         } else {
                             // Send 404 back ?
@@ -483,6 +499,7 @@ public class ServerService extends Service {
             int bodyLength = 9001;
 
             try {
+                // the get bytes is important because UTF-8 characters can be longer than one byte each
                 bodyLength = html_doc.getBytes("UTF-8").length;
             } catch (UnsupportedEncodingException e) {
                 // da passiert eh nöd
@@ -490,7 +507,6 @@ public class ServerService extends Service {
 
             String header = new StringBuilder(256).append("HTTP/1.1 ").append(" 200 OK\r\n")
                     .append("Server: ").append("Dini Mueter").append("\r\n")
-                    // the get bytes is important because UTF-8 characters can be longer than one byte each
                     .append("Content-Length: ").append(bodyLength).append("\r\n")
                     .append("Cache-Control: no-cache\r\n")
                     .append("Content-Type: text/html; charset=utf-8\r\n")
