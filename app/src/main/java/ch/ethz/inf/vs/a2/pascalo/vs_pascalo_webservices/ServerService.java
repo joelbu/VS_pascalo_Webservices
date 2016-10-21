@@ -424,7 +424,11 @@ public class ServerService extends Service implements SensorEventListener {
                             */
 
                             sendResponse("<p>" + String.valueOf(mTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>\n" +
-                                    "<p>" + String.valueOf(mAmbientTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>");
+                                    "<p>" + String.valueOf(mAmbientTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>\n");
+
+                        } else if (uriParts[2].equals("pressure")){
+
+                            sendResponse("<p>" + String.valueOf(mPressure) + SensorTypesImpl.getUnitString("temperature") + "</p>\n");
 
                         } else {
                             // Send 404 back ?
