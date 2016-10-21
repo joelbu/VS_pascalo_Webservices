@@ -403,20 +403,22 @@ public class ServerService extends Service implements SensorEventListener {
                         if(uriParts[2].equals("acceleration")) {
 
                             sendResponse(buildHTMLBodyWithHomeButton(
+                                    "<h2>Acceleration</h2>\n" +
                                     "<p>x: " + String.valueOf(mAcceleration[0]) + "m/s<sup>2</sup></p>\n" +
                                     "<p>y: " + String.valueOf(mAcceleration[1]) + "m/s<sup>2</sup></p>\n" +
                                     "<p>z: " + String.valueOf(mAcceleration[2]) + "m/s<sup>2</sup></p>\n"));
 
                         } else if (uriParts[2].equals("temperature")) {
 
-
                             sendResponse(buildHTMLBodyWithHomeButton(
+                                    "<h2>Temperature</h2>\n" +
                                     "<p>" + String.valueOf(mTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>\n" +
                                     "<p>" + String.valueOf(mAmbientTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>\n"));
 
                         } else if (uriParts[2].equals("pressure")){
 
                             sendResponse(buildHTMLBodyWithHomeButton(
+                                    "<h2>Pressure</h2>\n" +
                                     "<p>" + String.valueOf(mPressure) + SensorTypesImpl.getUnitString("pressure") + "</p>\n"));
 
                         } else {
