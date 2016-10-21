@@ -34,6 +34,21 @@ public class ServerService extends Service {
     private int mPort = 8088;
 
 
+    private volatile float mTempurature;
+
+    private volatile float mLight;
+    private volatile float mPressure;
+    private volatile float mProximity;
+    private volatile float mHumidity;
+    private volatile float[] mAcceleration;
+    private volatile float[] mGravity;
+    private volatile float[] mGyroscope;
+    private volatile float[] mLinearAcceleration;
+    private volatile float[] mMagnetic;
+    private volatile float[] mOrientation;
+    private volatile float[] mRotation;
+
+
     // We do not need this, but per the documentation we need to return null
     @Nullable
     @Override
@@ -123,6 +138,72 @@ public class ServerService extends Service {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+        }
+    }
+
+    private class SensorListenerThread extends Thread implements SensorEventListener {
+        private SensorTypesImpl STI;
+
+        @Override
+        public void run() {
+
+            STI = new SensorTypesImpl();
+
+
+
+        }
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            Sensor respondingSensor = event.sensor;
+            switch (respondingSensor.getType()) {
+                case Sensor.TYPE_TEMPERATURE:
+                case Sensor.TYPE_AMBIENT_TEMPERATURE:
+                    mTempurature = event.values.clone()[0];
+                    break;
+                case Sensor.TYPE_LIGHT:
+                    mLight = event.values.clone()[0];
+                    break;
+                case Sensor.TYPE_PRESSURE:
+                    mPressure = event.values.clone()[0];
+                    break;
+                case Sensor.TYPE_PROXIMITY:
+                    mProximity = event.values.clone()[0];
+                    break;
+                case Sensor.TYPE_RELATIVE_HUMIDITY:
+                    mHumidity = event.values.clone()[0];
+                    break;
+                case Sensor.TYPE_ACCELEROMETER:
+                    mAcceleration = event.values.clone();
+                    break;
+                case Sensor.TYPE_GRAVITY:
+                    mGravity = event.values.clone();
+                    break;
+                case Sensor.TYPE_GYROSCOPE:
+                    mGyroscope = event.values.clone();
+                    break;
+                case Sensor.TYPE_LINEAR_ACCELERATION:
+                    mLinearAcceleration = event.values.clone();
+                    break;
+                case Sensor.TYPE_MAGNETIC_FIELD:
+                    mMagnetic = event.values.clone();
+                    break;
+                case Sensor.TYPE_ORIENTATION:
+                    mOrientation = event.values.clone();
+                    break;
+                case Sensor.TYPE_ROTATION_VECTOR:
+                    mRotation = event.values.clone();
+                    break;
+                default:
+                    Log.d(TAG, "Unexpected Sensor");
+
+            }
+
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
         }
     }
