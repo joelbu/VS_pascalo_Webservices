@@ -389,9 +389,13 @@ public class ServerService extends Service implements SensorEventListener {
                     if (uriParts.length <= 1) { //  Path = "/"
                         sendResponse(buildHTMLBody(
                                 "<h2>Home VS Pascalo</h2>\n" +
+                                "<h3>Sensors:</h3>\n" +
                                 "<p><a href=\"sensors/acceleration\">Acceleration</a></p>\n" +
                                 "<p><a href=\"sensors/pressure\">Pressure</a></p>\n" +
-                                "<p><a href=\"sensors/temperature\">Temperature</a></p>\n"
+                                "<p><a href=\"sensors/temperature\">Temperature</a></p>\n" +
+                                "<h3>Actuators:</h3>\n" +
+                                "<p><a href=\"actuators/vibrator\">Vibrator</a></p>\n" +
+                                "<p><a href=\"actuators/music_player\">Music player</a></p>\n"
                         ));
                     }
                     else if (uriParts[1].equals("sensors")) {
