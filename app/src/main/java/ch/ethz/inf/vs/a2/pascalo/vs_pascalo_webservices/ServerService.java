@@ -394,8 +394,7 @@ public class ServerService extends Service implements SensorEventListener {
                                 "<p><a href=\"sensors/temperature\">Temperature</a></p>\n"
                         ));
                     }
-
-                    if (uriParts[1].equals("sensors")) {
+                    else if (uriParts[1].equals("sensors")) {
 
                         // Handle request and listen to event
                         SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -427,7 +426,19 @@ public class ServerService extends Service implements SensorEventListener {
                                     "<h2>Resource " + uriParts[2] +" not found</h2>"));
                         }
 
-                    } else {
+                    }
+                    // Show description about how to manipulate the actuators
+                    else if (uriParts[1].equals("actuators")) {
+
+                        if (uriParts[2].equals("vibrator")) {
+                            vibratorResponse("");
+                        }
+                        else {
+                            sendResponse(buildHTMLBodyWithHomeButton(
+                                    "<h2>Unknown actuator</h2>"));
+                        }
+                    }
+                    else {
                         sendResponse(buildHTMLBodyWithHomeButton(
                                 "<h2>Method GET not allowed for " + uriParts[1] + "</h2>"));
                     }
@@ -437,8 +448,9 @@ public class ServerService extends Service implements SensorEventListener {
 
                         // TODO: read some values from the body (requestBody) and do something with them
 
-                        sendResponse(buildHTMLBodyWithHomeButton(
-                                "<h2>Hello yes, I'm an actuator, thanks for POST-ing</h2>"));
+                        if (uriParts[2].equals("vibrator")) {
+                            vibratorResponse("");
+                        }
 
                     } else {
 
@@ -454,7 +466,7 @@ public class ServerService extends Service implements SensorEventListener {
                 }
 
 
-                if (uriParts[0].equals("sensors")) {
+               /* if (uriParts[0].equals("sensors")) {
 
                     // Handle request and listen to event
 
@@ -473,12 +485,25 @@ public class ServerService extends Service implements SensorEventListener {
                                 "<h2>Method " + method + " not allowed for actuators</h2>"));
                     }
 
-                }
+                }*/
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
 
+
+
+
+        private void vibratorResponse(String footer){
+            sendResponse(buildHTMLBodyWithHomeButton( //TODO description
+                    "<form action=\"\">\n" +
+                            "Time (between 1 and 10):\n" +
+                            "<input type=\"number\" name=\"quantity\" min=\"1\" max=\"10\" step=\"0.1\">\n" +
+                            "<input type=\"submit\">\n" +
+                            "</form>" +
+                            footer
+            ));
         }
 
         private String buildHTMLBodyWithHomeButton(String body){
