@@ -223,7 +223,7 @@ public class ServerService extends Service implements SensorEventListener {
         }
     }
 
-    private class RequestHandler implements Runnable, SensorEventListener {
+    private class RequestHandler implements Runnable {
         private final String RHTAG = "RequestHandler";
         private final String URI_PREFIX = "ch.ethz.inf.vs.a2.pascalo.vs_pascalo_webservices.";
         Socket mSocket;
@@ -382,25 +382,18 @@ public class ServerService extends Service implements SensorEventListener {
                 // empty String.
                 String[] uriParts = uri.split("[/]");
 
-                /*
-                String resource_name = "";
-                // Parsing resource URI from request string
-                int resource_uri_head = request.indexOf("name=\"resource\"");
-                int resource_uri_start = request.indexOf(URI_PREFIX, resource_uri_head);
-                int resource_uri_end = request.indexOf("\r", resource_uri_start + URI_PREFIX.length());
-                if (resource_uri_head != -1 && resource_uri_start !=-1 && resource_uri_end != -1) {
-                    resource_name = request.substring(resource_uri_start + URI_PREFIX.length(), resource_uri_end);
-                    Log.d(TAG, "Resource: " + resource_name);
-                }
-                else {
-                    Log.d(TAG, "Input request misses resource URI field or it is corrupted. Request: " + request);
-                }
 
-                Log.d(TAG, request);
-
-                */
 
                 if (method.equals("GET")) {
+
+                    if (uriParts.length <= 1) { //  Path = "/"
+                        sendResponse(buildHTMLBody(
+                                "<h2>Home VS Pascalo</h2>\n" +
+                                "<p><a href=\"sensors/acceleration\">Acceleration</a></p>\n" +
+                                "<p><a href=\"sensors/pressure\">Pressure</a></p>\n" +
+                                "<p><a href=\"sensors/temperature\">Temperature</a></p>\n"
+                        ));
+                    }
 
                     if (uriParts[1].equals("sensors")) {
 
@@ -408,35 +401,33 @@ public class ServerService extends Service implements SensorEventListener {
                         SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
                         if(uriParts[2].equals("acceleration")) {
-                            /*
-                            double x = 9.81; // TODO: Read actual values
-                            double y = 0.45;
-                            double z = 2.14;
-                            */
 
-                            sendResponse("<p>x: " + String.valueOf(mAcceleration[0]) + "m/s<sup>2</sup></p>\n" +
+                            sendResponse(buildHTMLBodyWithHomeButton(
+                                    "<p>x: " + String.valueOf(mAcceleration[0]) + "m/s<sup>2</sup></p>\n" +
                                     "<p>y: " + String.valueOf(mAcceleration[1]) + "m/s<sup>2</sup></p>\n" +
-                                    "<p>z: " + String.valueOf(mAcceleration[2]) + "m/s<sup>2</sup></p>\n");
+                                    "<p>z: " + String.valueOf(mAcceleration[2]) + "m/s<sup>2</sup></p>\n"));
 
                         } else if (uriParts[2].equals("temperature")) {
-                            /*
-                            double a = 21.84; // TODO: Read actual value
-                            */
 
-                            sendResponse("<p>" + String.valueOf(mTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>\n" +
-                                    "<p>" + String.valueOf(mAmbientTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>\n");
+
+                            sendResponse(buildHTMLBodyWithHomeButton(
+                                    "<p>" + String.valueOf(mTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>\n" +
+                                    "<p>" + String.valueOf(mAmbientTempurature) + SensorTypesImpl.getUnitString("temperature") + "</p>\n"));
 
                         } else if (uriParts[2].equals("pressure")){
 
-                            sendResponse("<p>" + String.valueOf(mPressure) + SensorTypesImpl.getUnitString("temperature") + "</p>\n");
+                            sendResponse(buildHTMLBodyWithHomeButton(
+                                    "<p>" + String.valueOf(mPressure) + SensorTypesImpl.getUnitString("pressure") + "</p>\n"));
 
                         } else {
                             // Send 404 back ?
-                            sendResponse("<h2>Resource " + uriParts[2] +" not found</h2>");
+                            sendResponse(buildHTMLBodyWithHomeButton(
+                                    "<h2>Resource " + uriParts[2] +" not found</h2>"));
                         }
 
                     } else {
-                        sendResponse("<h2>Method GET not allowed for " + uriParts[1] + "</h2>");
+                        sendResponse(buildHTMLBodyWithHomeButton(
+                                "<h2>Method GET not allowed for " + uriParts[1] + "</h2>"));
                     }
                 } else if( method.equals("POST") ) {
 
@@ -444,17 +435,20 @@ public class ServerService extends Service implements SensorEventListener {
 
                         // TODO: read some values from the body (requestBody) and do something with them
 
-                        sendResponse("<h2>Hello yes, I'm an actuator, thanks for POST-ing</h2>");
+                        sendResponse(buildHTMLBodyWithHomeButton(
+                                "<h2>Hello yes, I'm an actuator, thanks for POST-ing</h2>"));
 
                     } else {
 
-                        sendResponse("<h2>Method POST not allowed for " + uriParts[1] + "</h2>");
+                        sendResponse(buildHTMLBodyWithHomeButton(
+                                "<h2>Method POST not allowed for " + uriParts[1] + "</h2>"));
 
                     }
 
                 } else { // wrong HTTP method
                     // Send error 405 back ?
-                    sendResponse("<h2>Method " + method + " not allowed</h2>");
+                    sendResponse(buildHTMLBodyWithHomeButton(
+                            "<h2>Method " + method + " not allowed</h2>"));
                 }
 
 
@@ -473,13 +467,11 @@ public class ServerService extends Service implements SensorEventListener {
 
                     } else { // wrong HTTP method
                         // Send error 405 back ?
-                        sendResponse("<h2>Method " + method + " not allowed for actuators</h2>");
+                        sendResponse(buildHTMLBodyWithHomeButton(
+                                "<h2>Method " + method + " not allowed for actuators</h2>"));
                     }
 
                 }
-
-
-
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -487,10 +479,12 @@ public class ServerService extends Service implements SensorEventListener {
 
         }
 
-        private void sendResponse(String body) {
+        private String buildHTMLBodyWithHomeButton(String body){
+            return buildHTMLBody( "<a href=\"/\">&larr; Home</a><br>" + body);
+        }
 
-            // Create HTML document
-            String html_doc = "<!DOCTYPE html>\n" +
+        private String buildHTMLBody(String body){
+            return "<!DOCTYPE html>\n" +
                     "<html>\n" +
                     "<head>\n" +
                     "<title>VS Pascalo</title>\n" +
@@ -499,6 +493,9 @@ public class ServerService extends Service implements SensorEventListener {
                     body +
                     "</body>\n" +
                     "</html>";
+        }
+
+        private void sendResponse(String html_doc) {
 
             int bodyLength = 9001;
 
@@ -538,17 +535,6 @@ public class ServerService extends Service implements SensorEventListener {
             } catch(Exception e) {
                 e.printStackTrace();
             }
-        }
-
-        @Override
-        public void onSensorChanged(SensorEvent event) {
-            //TODO Read value and write it in HTML body
-            sendResponse("<h3>No value</h3>");
-        }
-
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-            // Do nothing
         }
     }
 }
