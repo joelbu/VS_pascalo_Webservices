@@ -77,6 +77,8 @@ public class REST_server extends AppCompatActivity implements View.OnClickListen
                 if (mInetAddress != null){
                     intent.putExtra("IPAddress", mInetAddress);
                     startService(intent);
+                    TextView infoDisplay = (TextView) findViewById(R.id.rest_server_status_text);
+                    infoDisplay.setText(mInetAddress.toString() + "8088");
                 }
 
                 else {
